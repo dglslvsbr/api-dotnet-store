@@ -1,0 +1,18 @@
+{
+  // Configure your connection string and JWT settings here
+  "ConnectionStrings": {
+    "DefaultConnection": ""
+  },
+  "Jwt": {
+    "Key": "",
+    "Issuer": "Backend",
+    "Audience": "Frontend"
+  },
+  "Logging": {
+    "LogLevel": {
+      "Default": "Information",
+      "Microsoft.AspNetCore": "Warning"
+    }
+  },
+  "AllowedHosts": "*"
+}
