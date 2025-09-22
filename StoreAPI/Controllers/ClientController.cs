@@ -21,12 +21,15 @@ namespace StoreAPI.Controllers
         private readonly IUnitOfWork _unitOfWork;
         private readonly IMapper _mapper;
         private readonly ILogger<ClientController> _logger;
+        private readonly ISystemCache<Client> _systemCache;
+        private const string CacheClient = "CacheClient";
 
-        public ClientController(IUnitOfWork unitOfWork, IMapper mapper, ILogger<ClientController> logger)
+        public ClientController(IUnitOfWork unitOfWork, IMapper mapper, ILogger<ClientController> logger, ISystemCache<Client> systemCache)
         {
             _unitOfWork = unitOfWork;
             _mapper = mapper;
             _logger = logger;
+            _systemCache = systemCache;
         }
 
         [Authorize(Policy = "UserOnly")]
@@ -34,7 +37,7 @@ namespace StoreAPI.Controllers
         [Route("GetAll")]
         public async Task<ActionResult<IEnumerable<ShowClientDTO>>> GetAllAsync()
         {
-            var clients = await _unitOfWork.ClientRepository.GetAllAsync();
+            var clients = await _systemCache.TryGetCacheList(CacheClient);
 
             if (clients is null || !clients.Any())
                 return NotFound(new Response<IActionResult> { StatusCode = StatusCodes.Status404NotFound, Message = GlobalMessage.NotFound404 });
@@ -50,7 +53,7 @@ namespace StoreAPI.Controllers
         [Route("Get/{id:int}")]
         public async Task<ActionResult<ShowClientDTO>> GetAsync([FromRoute] int id)
         {
-            var client = await _unitOfWork.ClientRepository.GetAsync(id);
+            var client = await _systemCache.TryGetCacheUnique($"{CacheClient}/{id}", id);
 
             if (client is null)
                 return NotFound(new Response<IActionResult> { StatusCode = StatusCodes.Status404NotFound, Message = GlobalMessage.NotFound404 });
@@ -80,6 +83,8 @@ namespace StoreAPI.Controllers
             await _unitOfWork.ClientRepository.CreateAsync(client);
             await _unitOfWork.CommitAsync();
 
+            _systemCache.InvalidCache(CacheClient);
+
             _logger.LogInformation($"ClientController: A Client with ID {client.Id} was created successfully");
             return Ok(new Response<IActionResult> { StatusCode = StatusCodes.Status201Created, Message = GlobalMessage.OK200 });
         }
@@ -106,6 +111,9 @@ namespace StoreAPI.Controllers
 
             await _unitOfWork.CommitAsync();
 
+            _systemCache.InvalidCache(CacheClient);
+            _systemCache.InvalidCache($"{CacheClient}/{id}");
+
             _logger.LogInformation($"ClientController: A Client with ID {client.Id} was updated successfully");
             return Ok(new Response<ShowClientDTO> { StatusCode = StatusCodes.Status200OK, Message = GlobalMessage.OK200, Data = clientDto });
         }
@@ -123,6 +131,9 @@ namespace StoreAPI.Controllers
             _unitOfWork.ClientRepository.DeleteAsync(clientExist);
 
             await _unitOfWork.CommitAsync();
+
+            _systemCache.InvalidCache(CacheClient);
+            _systemCache.InvalidCache($"{CacheClient}/{id}");
 
             _logger.LogInformation($"ClientController: A Client with ID {clientExist.Id} was deleted successfully");
             return Ok(new Response<IActionResult> { StatusCode = StatusCodes.Status200OK, Message = GlobalMessage.OK200 });

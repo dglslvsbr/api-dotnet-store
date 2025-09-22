@@ -20,12 +20,15 @@ namespace StoreAPI.Controllers
         private readonly IUnitOfWork _unitOfWork;
         private readonly IMapper _mapper;
         private readonly ILogger<CategoryController> _logger;
+        private readonly ISystemCache<Category> _systemCache;
+        private const string CacheCategory = "CacheCategory";
 
-        public CategoryController(IUnitOfWork unitOfWork, IMapper mapper, ILogger<CategoryController> logger)
+        public CategoryController(IUnitOfWork unitOfWork, IMapper mapper, ILogger<CategoryController> logger, ISystemCache<Category> systemCache)
         {
             _unitOfWork = unitOfWork;
             _mapper = mapper;
             _logger = logger;
+            _systemCache = systemCache;
         }
 
         [Authorize(Policy = "UserOnly")]
@@ -33,12 +36,12 @@ namespace StoreAPI.Controllers
         [Route("GetAll")]
         public async Task<ActionResult<IEnumerable<ShowCategoryDTO>>> GetAllAsync()
         {
-            var categorys = await _unitOfWork.CategoryRepository.GetAllAsync();
+            var categories = await _systemCache.TryGetCacheList(CacheCategory);
 
-            if (categorys is null || !categorys.Any())
+            if (categories is null || !categories.Any())
                 return NotFound(new Response<IActionResult> { StatusCode = StatusCodes.Status404NotFound, Message = GlobalMessage.NotFound404 });
 
-            var categorysDto = _mapper.Map<IEnumerable<ShowCategoryDTO>>(categorys);
+            var categorysDto = _mapper.Map<IEnumerable<ShowCategoryDTO>>(categories);
 
             _logger.LogInformation("CategoryController: Method GetAll was acioned successfully");
             return Ok(new Response<IEnumerable<ShowCategoryDTO>> { StatusCode = StatusCodes.Status200OK, Message = GlobalMessage.OK200, Data = categorysDto });
@@ -49,7 +52,7 @@ namespace StoreAPI.Controllers
         [Route("Get/{id:int}")]
         public async Task<ActionResult<ShowCategoryDTO>> GetAsync([FromRoute] int id)
         {
-            var category = await _unitOfWork.CategoryRepository.GetAsync(id);
+            var category = await _systemCache.TryGetCacheUnique($"{CacheCategory}/{id}", id);
 
             if (category is null)
                 return NotFound(new Response<IActionResult> { StatusCode = StatusCodes.Status404NotFound, Message = GlobalMessage.NotFound404 });
@@ -73,6 +76,8 @@ namespace StoreAPI.Controllers
             await _unitOfWork.CategoryRepository.CreateAsync(category);
             await _unitOfWork.CommitAsync();
 
+            _systemCache.InvalidCache(CacheCategory);
+
             _logger.LogInformation($"CategoryController: A Category with ID {category.Id} was created successfully");
             return Ok(new Response<IActionResult> { StatusCode = StatusCodes.Status201Created, Message = GlobalMessage.Created201 });
         }
@@ -91,14 +96,18 @@ namespace StoreAPI.Controllers
                 return NotFound(new Response<IActionResult> { StatusCode = StatusCodes.Status404NotFound, Message = GlobalMessage.NotFound404 });
 
             pathDoc.ApplyTo(categoryExist, ModelState);
-            await _unitOfWork.CommitAsync();
 
             if (!ModelState.IsValid)
                 return BadRequest(new Response<IActionResult> { StatusCode = StatusCodes.Status400BadRequest, Message = GlobalMessage.BadRequest400 });
 
+            await _unitOfWork.CommitAsync();
+
+            _systemCache.InvalidCache(CacheCategory);
+            _systemCache.InvalidCache($"{CacheCategory}/{id}");
+
             var categoryDto = _mapper.Map<ShowCategoryDTO>(categoryExist);
 
-            _logger.LogInformation($"CategoryController: A Client with ID {categoryDto.Id} was updated successfully");
+            _logger.LogInformation($"CategoryController: A Category with ID {categoryDto.Id} was updated successfully");
             return Ok(new Response<ShowCategoryDTO> { StatusCode = StatusCodes.Status200OK, Message = GlobalMessage.OK200, Data = categoryDto });
         }
 
@@ -115,7 +124,10 @@ namespace StoreAPI.Controllers
             _unitOfWork.CategoryRepository.DeleteAsync(categoryExist);
             await _unitOfWork.CommitAsync();
 
-            _logger.LogInformation($"CategoryController: A Client with ID {id} was deleted successfully");
+            _systemCache.InvalidCache(CacheCategory);
+            _systemCache.InvalidCache($"{CacheCategory}/{id}");
+
+            _logger.LogInformation($"CategoryController: A Category with ID {id} was deleted successfully");
             return Ok(new Response<IActionResult> { StatusCode = StatusCodes.Status200OK, Message = GlobalMessage.OK200 });
         }
     }

@@ -21,12 +21,15 @@ namespace StoreAPI.Controllers
         private readonly IUnitOfWork _unitOfWork;
         private readonly IMapper _mapper;
         private readonly ILogger<OrderController> _logger;
+        private readonly ISystemCache<Order> _systemCache;
+        private const string CacheOrder = "CacheOrder";
 
-        public OrderController(IUnitOfWork unitOfWork, IMapper mapper, ILogger<OrderController> logger)
+        public OrderController(IUnitOfWork unitOfWork, IMapper mapper, ILogger<OrderController> logger, ISystemCache<Order> systemCache)
         {
             _unitOfWork = unitOfWork;
             _mapper = mapper;
             _logger = logger;
+            _systemCache = systemCache;
         }
 
         [Authorize(Policy = "UserOnly")]
@@ -34,7 +37,7 @@ namespace StoreAPI.Controllers
         [Route("GetAll")]
         public async Task<ActionResult<IEnumerable<ShowOrderDTO>>> GetAllAsync()
         {
-            var orders = await _unitOfWork.OrderRepository.GetAllAsync();
+            var orders = await _systemCache.TryGetCacheList(CacheOrder);
 
             if (orders is null || !orders.Any())
                 return NotFound(new Response<IActionResult> { StatusCode = StatusCodes.Status404NotFound, Message = GlobalMessage.NotFound404 });
@@ -50,7 +53,7 @@ namespace StoreAPI.Controllers
         [Route("Get/{id:int}")]
         public async Task<IActionResult> GetAsync([FromRoute] int id)
         {
-            var order = await _unitOfWork.OrderRepository.GetAsync(id);
+            var order = await _systemCache.TryGetCacheUnique($"{CacheOrder}/{id}", id);
 
             if (order is null)
                 return NotFound(new Response<IActionResult> { StatusCode = StatusCodes.Status404NotFound, Message = GlobalMessage.NotFound404 });
@@ -94,6 +97,8 @@ namespace StoreAPI.Controllers
                 await _unitOfWork.OrderRepository.CreateAsync(order);
                 await _unitOfWork.CommitAsync();
 
+                _systemCache.InvalidCache(CacheOrder);
+
                 _logger.LogInformation($"OrderController: A new Order with ID {order.Id} was created successfully");
                 return Ok(new Response<IActionResult> { StatusCode = StatusCodes.Status201Created, Message = GlobalMessage.Created201 });
             }
@@ -124,6 +129,9 @@ namespace StoreAPI.Controllers
 
             await _unitOfWork.CommitAsync();
 
+            _systemCache.InvalidCache(CacheOrder);
+            _systemCache.InvalidCache($"{CacheOrder}/{id}");
+
             var orderDto = _mapper.Map<ShowOrderDTO>(order);
 
             _logger.LogInformation($"OrderController: An Order with ID {orderDto.Id} was updated successfully");
@@ -142,6 +150,9 @@ namespace StoreAPI.Controllers
 
             _unitOfWork.OrderRepository.DeleteAsync(orderExist);
             await _unitOfWork.CommitAsync();
+
+            _systemCache.InvalidCache(CacheOrder);
+            _systemCache.InvalidCache($"{CacheOrder}/{id}");
 
             _logger.LogInformation($"OrderController: An Order with ID {orderExist.Id} was deleted successfully");
             return Ok(new Response<IActionResult> { StatusCode = StatusCodes.Status200OK, Message = GlobalMessage.OK200 });

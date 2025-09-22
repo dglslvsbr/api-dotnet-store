@@ -75,9 +75,13 @@ namespace StoreAPI
             builder.Services.AddScoped(typeof(IRepository<>), typeof(Repository<>));
             builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
             builder.Services.AddScoped<AppDbContext>();
+            builder.Services.AddScoped(typeof(ISystemCache<>), typeof(MemoryCache<>));
 
             // Auto Mapper
             builder.Services.AddAutoMapper(typeof(Mappings.AutoMapper));
+
+            // Add Memory Cache
+            builder.Services.AddMemoryCache();
 
             var app = builder.Build();
 

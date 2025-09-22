@@ -20,12 +20,15 @@ namespace StoreAPI.Controllers
         private readonly IUnitOfWork _unitOfWork;
         private readonly IMapper _mapper;
         private readonly ILogger<ProductController> _logger;
+        private readonly ISystemCache<Product> _systemCache;
+        private const string CacheProduct = "CacheProduct";
 
-        public ProductController(IUnitOfWork unitOfWork, IMapper mapper, ILogger<ProductController> logger)
+        public ProductController(IUnitOfWork unitOfWork, IMapper mapper, ILogger<ProductController> logger, ISystemCache<Product> systemCache)
         {
             _unitOfWork = unitOfWork;
             _mapper = mapper;
             _logger = logger;
+            _systemCache = systemCache;
         }
 
         [Authorize(Policy = "UserOnly")]
@@ -33,7 +36,7 @@ namespace StoreAPI.Controllers
         [Route("GetAll")]
         public async Task<ActionResult<IEnumerable<Product>>> GetAllAsync()
         {
-            var products = await _unitOfWork.ProductRepository.GetAllAsync();
+            var products = await _systemCache.TryGetCacheList(CacheProduct);
 
             if (products is null || !products.Any())
                 return NotFound(new Response<IActionResult> { StatusCode = StatusCodes.Status404NotFound, Message = GlobalMessage.NotFound404 });
@@ -49,7 +52,7 @@ namespace StoreAPI.Controllers
         [Route("Get/{id:int}")]
         public async Task<ActionResult<Product>> GetAsync([FromRoute] int id)
         {
-            var product = await _unitOfWork.ProductRepository.GetAsync(id);
+            var product = await _systemCache.TryGetCacheUnique($"{CacheProduct}/{id}", id);
 
             if (product is null)
                 return NotFound(new Response<IActionResult> { StatusCode = StatusCodes.Status404NotFound, Message = GlobalMessage.NotFound404 });
@@ -72,6 +75,8 @@ namespace StoreAPI.Controllers
 
             await _unitOfWork.ProductRepository.CreateAsync(product);
             await _unitOfWork.CommitAsync();
+
+            _systemCache.InvalidCache(CacheProduct);
 
             _logger.LogInformation($"ProductController: A new Product with ID {product.Id} was created successfully");
             return Ok(new Response<IActionResult> { StatusCode = StatusCodes.Status201Created, Message = GlobalMessage.Created201 });
@@ -97,6 +102,9 @@ namespace StoreAPI.Controllers
 
             await _unitOfWork.CommitAsync();
 
+            _systemCache.InvalidCache(CacheProduct);
+            _systemCache.InvalidCache($"{CacheProduct}/{id}");
+
             var productDto = _mapper.Map<ShowProductDTO>(productExist);
 
             _logger.LogInformation($"ProductController: A Product with ID {productDto.Id} was updated successfully");
@@ -115,6 +123,9 @@ namespace StoreAPI.Controllers
 
             _unitOfWork.ProductRepository.DeleteAsync(productExist);
             await _unitOfWork.CommitAsync();
+
+            _systemCache.InvalidCache(CacheProduct);
+            _systemCache.InvalidCache($"{CacheProduct}/{id}");
 
             _logger.LogInformation($"ProductController: A Product with ID {productExist.Id} was updated successfully");
             return Ok(new Response<IActionResult> { StatusCode = StatusCodes.Status200OK, Message = GlobalMessage.OK200 });
