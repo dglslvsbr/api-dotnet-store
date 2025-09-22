@@ -61,7 +61,7 @@ namespace StoreAPI.Controllers
         }
 
         [HttpPost]
-        [Route("CreateAccount")]
+        [Route("Create")]
         public async Task<IActionResult> CreateAccountAsync([FromBody] CreateClientDTO createClientDto)
         {
             if (createClientDto is null)
@@ -74,6 +74,7 @@ namespace StoreAPI.Controllers
 
             var client = _mapper.Map<Client>(createClientDto);
 
+            client.Password = BCrypt.Net.BCrypt.HashPassword(client.Password);
             client.ClientRole = [new ClientRole { RoleId = 1, ClientId = client.Id }];
 
             await _unitOfWork.ClientRepository.CreateAsync(client);

@@ -40,8 +40,8 @@ namespace StoreAPI.Controllers
 
             var userExist = await _unitOfWork.ClientRepository.GetByEmailAsync(loginDTO.Email!);
 
-            if (userExist is null)
-                return NotFound(new Response<IActionResult> { StatusCode = StatusCodes.Status404NotFound, Message = GlobalMessage.NotFound404 });
+            if (userExist is null || !BCrypt.Net.BCrypt.Verify(loginDTO.Password, userExist.Password))
+                return BadRequest(new Response<IActionResult> { StatusCode = StatusCodes.Status400BadRequest, Message = GlobalMessage.BadRequest400 });
 
             var token = _tokenService.GenerateToken(userExist, _configuration);
 

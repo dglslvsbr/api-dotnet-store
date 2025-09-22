@@ -15,7 +15,7 @@ namespace StoreAPI.Configurations
             builder.Property(x => x.FirstName).IsRequired().HasMaxLength(30);
             builder.Property(x => x.LastName).IsRequired().HasMaxLength(30);
             builder.Property(x => x.Email).IsRequired().HasMaxLength(30);
-            builder.Property(x => x.Password).IsRequired().HasMaxLength(30);
+            builder.Property(x => x.Password).IsRequired().HasMaxLength(100);
             builder.Property(x => x.CPF).IsRequired().HasMaxLength(11);
             builder.Property(x => x.Phone).IsRequired().HasMaxLength(11);
 
