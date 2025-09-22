@@ -1,8 +1,10 @@
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using StoreAPI.AppContext;
+using StoreAPI.Customs;
 using StoreAPI.Interfaces;
 using StoreAPI.Repositories;
 using StoreAPI.Services;
@@ -22,8 +24,13 @@ namespace StoreAPI
             var configuration = builder.Configuration;
             var myAllowSpecifOrigin = "http://127.0.0.1:5500";
 
+            // To suppress the automatic model state validation
+            builder.Services.Configure<ApiBehaviorOptions>(options => options.SuppressModelStateInvalidFilter = true);
+
             // Add services to the container.
-            builder.Services.AddControllers().AddJsonOptions(options => options.JsonSerializerOptions.ReferenceHandler = ReferenceHandler.IgnoreCycles).AddNewtonsoftJson();
+            builder.Services.AddControllers(options => options.Filters.Add<CustomValidationFilter>())
+                            .AddJsonOptions(options => options.JsonSerializerOptions.ReferenceHandler = ReferenceHandler.IgnoreCycles)
+                            .AddNewtonsoftJson();
 
             // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
             builder.Services.AddEndpointsApiExplorer();
