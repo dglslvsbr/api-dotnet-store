@@ -61,7 +61,7 @@ namespace StoreAPI.Controllers
             return Ok(new Response<ShowOrderDTO> { StatusCode = StatusCodes.Status200OK, Message = GlobalMessage.OK200, Data = orderDto });
         }
 
-        [Authorize(Policy = "AdminOnly")]
+        [Authorize(Policy = "UserOnly")]
         [HttpPost]
         [Route("Create/{clientId:int}/{installments:int}")]
         public async Task<IActionResult> CreateAsync([FromRoute] int clientId, [FromRoute] int installments, [FromBody] List<Product> products)
@@ -70,6 +70,10 @@ namespace StoreAPI.Controllers
             {
                 if (products is null || products.Count == 0)
                     return BadRequest(new Response<IActionResult> { StatusCode = StatusCodes.Status400BadRequest, Message = GlobalMessage.BadRequest400 });
+
+                foreach (Product p in products)
+                    if (await _unitOfWork.ProductRepository.GetAsync(p.Id) is null)
+                        return BadRequest(new Response<IActionResult> { StatusCode = StatusCodes.Status400BadRequest, Message = GlobalMessage.BadRequest400 });
 
                 var orderItems = products.Select(p => new OrderItem
                 {
