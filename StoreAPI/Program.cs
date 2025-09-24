@@ -5,6 +5,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using StoreAPI.AppContext;
 using StoreAPI.Customs;
+using StoreAPI.Exceptions;
 using StoreAPI.Interfaces;
 using StoreAPI.Repositories;
 using StoreAPI.Services;
@@ -28,9 +29,13 @@ namespace StoreAPI
             builder.Services.Configure<ApiBehaviorOptions>(options => options.SuppressModelStateInvalidFilter = true);
 
             // Add services to the container.
-            builder.Services.AddControllers(options => options.Filters.Add<CustomValidationFilter>())
-                            .AddJsonOptions(options => options.JsonSerializerOptions.ReferenceHandler = ReferenceHandler.IgnoreCycles)
-                            .AddNewtonsoftJson();
+            builder.Services.AddControllers(options =>
+            {
+                options.Filters.Add<CustomValidationFilter>();
+                options.Filters.Add<GlobalException>();
+            })
+            .AddJsonOptions(options => options.JsonSerializerOptions.ReferenceHandler = ReferenceHandler.IgnoreCycles)
+            .AddNewtonsoftJson();
 
             // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
             builder.Services.AddEndpointsApiExplorer();
@@ -61,7 +66,7 @@ namespace StoreAPI
                     ValidAudience = configuration["Jwt:Audience"],
                     IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(configuration["Jwt:Key"]!))
                 });
-            
+
             // Implemented authorization
             builder.Services.AddAuthorizationBuilder().AddPolicy("UserOnly", options => options.RequireRole("User"))
                                                       .AddPolicy("AdminOnly", options => options.RequireRole("Admin"));
