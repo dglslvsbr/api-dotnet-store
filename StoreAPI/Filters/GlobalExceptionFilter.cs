@@ -1,9 +1,9 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Filters;
 
-namespace StoreAPI.Exceptions
+namespace StoreAPI.Filters
 {
-    public class GlobalException : IExceptionFilter
+    public class GlobalExceptionFilter : IExceptionFilter
     {
         public void OnException(ExceptionContext context)
         {

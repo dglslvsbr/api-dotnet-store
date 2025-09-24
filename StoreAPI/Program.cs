@@ -32,7 +32,7 @@ namespace StoreAPI
             builder.Services.AddControllers(options =>
             {
                 options.Filters.Add<CustomValidationFilter>();
-                options.Filters.Add<GlobalException>();
+                options.Filters.Add<GlobalExceptionFilter>();
             })
             .AddJsonOptions(options => options.JsonSerializerOptions.ReferenceHandler = ReferenceHandler.IgnoreCycles)
             .AddNewtonsoftJson();
