@@ -1,134 +1,106 @@
-﻿using AutoMapper;
-using Microsoft.AspNetCore.Authorization;
+﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Cors;
-using Microsoft.AspNetCore.JsonPatch;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.RateLimiting;
 using StoreAPI.DTOs;
 using StoreAPI.Entities.Models;
 using StoreAPI.Interfaces;
 using StoreAPI.Useful;
 
-namespace StoreAPI.Controllers
+namespace StoreAPI.Controllers;
+
+[EnableCors("AllowCors")]
+[ApiController]
+[Route("api/[controller]")]
+public class ProductController(IProductService productService, ILogger<ProductController> logger) : ControllerBase
 {
-    [EnableRateLimiting("RateLimiter")]
-    [EnableCors("AllowCors")]
-    [ApiController]
-    [Route("api/[controller]")]
-    public class ProductController : ControllerBase
+    [Authorize(Policy = "UserOnly")]
+    [HttpGet]
+    [Route("GetAllProductsByCategory/{categoryId:int}")]
+    public async Task<ActionResult<IEnumerable<ShowProductDTO>>> GetAllProductsByCategoryAsync([FromRoute] int categoryId, [FromQuery] int pageNumber, [FromQuery] int pageSize)
     {
-        private readonly IUnitOfWork _unitOfWork;
-        private readonly IMapper _mapper;
-        private readonly ILogger<ProductController> _logger;
-        private readonly ISystemCache<Product> _systemCache;
-        private const string CacheProduct = "CacheProduct";
+        var productListPaginated = await productService.GetPaginatedProductsByCategoryAsync(categoryId, pageNumber, pageSize);
 
-        public ProductController(IUnitOfWork unitOfWork, IMapper mapper, ILogger<ProductController> logger, ISystemCache<Product> systemCache)
-        {
-            _unitOfWork = unitOfWork;
-            _mapper = mapper;
-            _logger = logger;
-            _systemCache = systemCache;
-        }
+        if (productListPaginated is null || !productListPaginated.Any())
+            return NotFound(new Response<IActionResult> { StatusCode = StatusCodes.Status404NotFound, Message = GlobalMessage.NotFound404 });
 
-        [Authorize(Policy = "UserOnly")]
-        [HttpGet]
-        [Route("GetAll")]
-        public async Task<ActionResult<IEnumerable<Product>>> GetAllAsync()
-        {
-            var products = await _systemCache.TryGetCacheList(CacheProduct);
+        logger.LogInformation("ProductController: Method GetAll was acioned successfully");
+        return Ok(new Response<IEnumerable<ShowProductDTO>> { StatusCode = StatusCodes.Status200OK, Message = GlobalMessage.OK200, Data = productListPaginated });
+    }
 
-            if (products is null || !products.Any())
-                return NotFound(new Response<IActionResult> { StatusCode = StatusCodes.Status404NotFound, Message = GlobalMessage.NotFound404 });
+    [Authorize(Policy = "UserOnly")]
+    [HttpGet]
+    [Route("GetAllPaginated")]
+    public async Task<ActionResult<IEnumerable<ShowProductDTO>>> GetAllPaginatedAsync([FromQuery] int pageNumber, [FromQuery] int pageSize)
+    {
+        var productListPaginated = await productService.GetAllPaginatedProductsAsync(pageNumber, pageSize);
 
-            var produtsDto = _mapper.Map<IEnumerable<ShowProductDTO>>(products);
+        if (productListPaginated is null || !productListPaginated.Any())
+            return NotFound(new Response<IActionResult> { StatusCode = StatusCodes.Status404NotFound, Message = GlobalMessage.NotFound404 });
 
-            _logger.LogInformation("ProductController: Method GetAll was acioned successfully");
-            return Ok(new Response<IEnumerable<ShowProductDTO>> { StatusCode = StatusCodes.Status200OK, Message = GlobalMessage.OK200, Data = produtsDto });
-        }
+        logger.LogInformation("ProductController: Method GetAll was acioned successfully");
+        return Ok(new Response<IEnumerable<ShowProductDTO>> { StatusCode = StatusCodes.Status200OK, Message = GlobalMessage.OK200, Data = productListPaginated });
+    }
 
-        [Authorize(Policy = "UserOnly")]
-        [HttpGet]
-        [Route("Get/{id:int}")]
-        public async Task<ActionResult<Product>> GetAsync([FromRoute] int id)
-        {
-            var product = await _systemCache.TryGetCacheUnique($"{CacheProduct}/{id}", id);
+    [Authorize(Policy = "UserOnly")]
+    [HttpGet]
+    [Route("Get/{id:int}")]
+    public async Task<ActionResult<Product>> GetAsync([FromRoute] int id)
+    {
+        var product = await productService.GetAsync(id);
 
-            if (product is null)
-                return NotFound(new Response<IActionResult> { StatusCode = StatusCodes.Status404NotFound, Message = GlobalMessage.NotFound404 });
+        if (product is null)
+            return NotFound(new Response<IActionResult> { StatusCode = StatusCodes.Status404NotFound, Message = GlobalMessage.NotFound404 });
 
-            var productDto = _mapper.Map<ShowProductDTO>(product);
+        logger.LogInformation("ProductController: Method Get was acioned successfully");
+        return Ok(new Response<ShowProductDTO> { StatusCode = StatusCodes.Status200OK, Message = GlobalMessage.OK200, Data = product });
+    }
 
-            _logger.LogInformation("ProductController: Method Get was acioned successfully");
-            return Ok(new Response<ShowProductDTO> { StatusCode = StatusCodes.Status200OK, Message = GlobalMessage.OK200, Data = productDto });
-        }
+    [Authorize(Policy = "AdminOnly")]
+    [HttpPost]
+    [Route("Create")]
+    public async Task<IActionResult> CreateAsync([FromBody] CreateProductDTO createProductDto)
+    {
+        if (createProductDto is null)
+            return BadRequest(new Response<IActionResult> { StatusCode = StatusCodes.Status400BadRequest, Message = GlobalMessage.BadRequest400 });
 
-        [Authorize(Policy = "AdminOnly")]
-        [HttpPost]
-        [Route("Create")]
-        public async Task<IActionResult> CreateAsync([FromBody] CreateProductDTO createProductDto)
-        {
-            if (createProductDto is null)
-                return BadRequest(new Response<IActionResult> { StatusCode = StatusCodes.Status400BadRequest, Message = GlobalMessage.BadRequest400 });
+        await productService.CreateAsync(createProductDto);
 
-            var product = _mapper.Map<Product>(createProductDto);
+        logger.LogInformation($"ProductController: A new Product with name {createProductDto.Name} was created successfully");
+        return Ok(new Response<IActionResult> { StatusCode = StatusCodes.Status201Created, Message = GlobalMessage.Created201 });
+    }
 
-            await _unitOfWork.ProductRepository.CreateAsync(product);
-            await _unitOfWork.CommitAsync();
+    [Authorize(Policy = "AdminOnly")]
+    [HttpPut]
+    [Route("Update/{id:int}")]
+    public async Task<ActionResult<ShowProductDTO>> UpdateAsync([FromRoute] int id, [FromBody] UpdateProductDTO updateProductDTO)
+    {
+        if (updateProductDTO is null)
+            return BadRequest(new Response<IActionResult> { StatusCode = StatusCodes.Status400BadRequest, Message = GlobalMessage.BadRequest400 });
 
-            _systemCache.InvalidCache(CacheProduct);
+        var productExist = await productService.GetAsync(id);
 
-            _logger.LogInformation($"ProductController: A new Product with ID {product.Id} was created successfully");
-            return Ok(new Response<IActionResult> { StatusCode = StatusCodes.Status201Created, Message = GlobalMessage.Created201 });
-        }
+        if (productExist is null)
+            return NotFound(new Response<IActionResult> { StatusCode = StatusCodes.Status404NotFound, Message = GlobalMessage.NotFound404 });
 
-        [Authorize(Policy = "AdminOnly")]
-        [HttpPatch]
-        [Route("Update/{id:int}")]
-        public async Task<ActionResult<ShowProductDTO>> UpdateAsync([FromRoute] int id, [FromBody] JsonPatchDocument<Product> pathDoc)
-        {
-            if (pathDoc is null)
-                return BadRequest(new Response<IActionResult> { StatusCode = StatusCodes.Status400BadRequest, Message = GlobalMessage.BadRequest400 });
+        await productService.UpdateAsync(updateProductDTO);
 
-            var productExist = await _unitOfWork.ProductRepository.GetAsync(id);
+        logger.LogInformation($"ProductController: A Product with ID {updateProductDTO.Id} was updated successfully");
+        return Ok(new Response<ShowProductDTO> { StatusCode = StatusCodes.Status200OK, Message = GlobalMessage.OK200, Data = productExist });
+    }
 
-            if (productExist is null)
-                return NotFound(new Response<IActionResult> { StatusCode = StatusCodes.Status404NotFound, Message = GlobalMessage.NotFound404 });
+    [Authorize(Policy = "AdminOnly")]
+    [HttpDelete]
+    [Route("Delete/{id:int}")]
+    public async Task<IActionResult> DeleteAsync([FromRoute] int id)
+    {
+        var productExist = await productService.GetAsync(id);
 
-            pathDoc.ApplyTo(productExist, ModelState);
+        if (productExist is null)
+            return NotFound(new Response<IActionResult> { StatusCode = StatusCodes.Status404NotFound, Message = GlobalMessage.NotFound404 });
 
-            if (!ModelState.IsValid)
-                return BadRequest(new Response<IActionResult> { StatusCode = StatusCodes.Status400BadRequest, Message = GlobalMessage.BadRequest400 });
+        await productService.DeleteAsync(productExist);
 
-            await _unitOfWork.CommitAsync();
-
-            _systemCache.InvalidCache(CacheProduct);
-            _systemCache.InvalidCache($"{CacheProduct}/{id}");
-
-            var productDto = _mapper.Map<ShowProductDTO>(productExist);
-
-            _logger.LogInformation($"ProductController: A Product with ID {productDto.Id} was updated successfully");
-            return Ok(new Response<ShowProductDTO> { StatusCode = StatusCodes.Status200OK, Message = GlobalMessage.OK200, Data = productDto });
-        }
-
-        [Authorize(Policy = "AdminOnly")]
-        [HttpDelete]
-        [Route("Delete/{id:int}")]
-        public async Task<IActionResult> DeleteAsync([FromRoute] int id)
-        {
-            var productExist = await _unitOfWork.ProductRepository.GetAsync(id);
-
-            if (productExist is null)
-                return NotFound(new Response<IActionResult> { StatusCode = StatusCodes.Status404NotFound, Message = GlobalMessage.NotFound404 });
-
-            _unitOfWork.ProductRepository.DeleteAsync(productExist);
-            await _unitOfWork.CommitAsync();
-
-            _systemCache.InvalidCache(CacheProduct);
-            _systemCache.InvalidCache($"{CacheProduct}/{id}");
-
-            _logger.LogInformation($"ProductController: A Product with ID {productExist.Id} was updated successfully");
-            return Ok(new Response<IActionResult> { StatusCode = StatusCodes.Status200OK, Message = GlobalMessage.OK200 });
-        }
+        logger.LogInformation($"ProductController: A Product with ID {productExist.Id} was updated successfully");
+        return Ok(new Response<IActionResult> { StatusCode = StatusCodes.Status200OK, Message = GlobalMessage.OK200 });
     }
 }

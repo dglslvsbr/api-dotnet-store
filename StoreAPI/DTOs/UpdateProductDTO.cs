@@ -3,8 +3,10 @@ using System.ComponentModel.DataAnnotations;
 
 namespace StoreAPI.DTOs;
 
-public class CreateProductDTO
+public class UpdateProductDTO
 {
+    [Required]
+    public int Id { get; set; }
     [CustomValidation(typeof(StringValidation), nameof(StringValidation.Validate))]
     public string? Name { get; set; }
 

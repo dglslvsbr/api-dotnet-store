@@ -1,9 +1,8 @@
-﻿namespace StoreAPI.Entities.Models
+﻿namespace StoreAPI.Entities.Models;
+
+public class Category
 {
-    public class Category
-    {
-        public int Id { get; set; }
-        public string? Name { get; set; }
-        public ICollection<Product>? Product { get; set; }
-    }
+    public int Id { get; set; }
+    public string? Name { get; set; }
+    public ICollection<Product>? Product { get; set; }
 }

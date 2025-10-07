@@ -1,11 +1,10 @@
 ﻿using StoreAPI.Validations;
 using System.ComponentModel.DataAnnotations;
 
-namespace StoreAPI.DTOs
+namespace StoreAPI.DTOs;
+
+public class CreateCategoryDTO
 {
-    public class CreateCategoryDTO
-    {
-        [CustomValidation(typeof(StringValidation), nameof(StringValidation.Validate))]
-        public string? Name { get; set; }
-    }
+    [CustomValidation(typeof(StringValidation), nameof(StringValidation.Validate))]
+    public string? Name { get; set; }
 }

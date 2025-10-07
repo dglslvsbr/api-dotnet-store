@@ -1,134 +1,102 @@
-﻿using AutoMapper;
-using Microsoft.AspNetCore.Authorization;
+﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Cors;
-using Microsoft.AspNetCore.JsonPatch;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
 using StoreAPI.DTOs;
-using StoreAPI.Entities.Models;
 using StoreAPI.Interfaces;
 using StoreAPI.Useful;
 
-namespace StoreAPI.Controllers
+namespace StoreAPI.Controllers;
+
+[EnableRateLimiting("RateLimiter")]
+[EnableCors("AllowCors")]
+[ApiController]
+[Route("api/[controller]")]
+public class CategoryController(ICategoryService categoryService, ILogger<CategoryController> logger) : ControllerBase
 {
-    [EnableRateLimiting("RateLimiter")]
-    [EnableCors("AllowCors")]
-    [ApiController]
-    [Route("api/[controller]")]
-    public class CategoryController : ControllerBase
+    [Authorize("UserOnly")]
+    [HttpGet]
+    [Route("GetAllCategoriesPaginated")]
+    public async Task<ActionResult<IEnumerable<ShowCategoryDTO>>> GetAllCategoriesPaginatedAsync([FromQuery] int pageNumber, [FromQuery] int pageSize)
     {
-        private readonly IUnitOfWork _unitOfWork;
-        private readonly IMapper _mapper;
-        private readonly ILogger<CategoryController> _logger;
-        private readonly ISystemCache<Category> _systemCache;
-        private const string CacheCategory = "CacheCategory";
+        var categoriesList = await categoryService.GetAllCategoriesPaginatedAsync(pageNumber, pageSize);
 
-        public CategoryController(IUnitOfWork unitOfWork, IMapper mapper, ILogger<CategoryController> logger, ISystemCache<Category> systemCache)
-        {
-            _unitOfWork = unitOfWork;
-            _mapper = mapper;
-            _logger = logger;
-            _systemCache = systemCache;
-        }
+        if (categoriesList is null || !categoriesList.Any())
+            return NotFound(new Response<IActionResult> { StatusCode = StatusCodes.Status404NotFound, Message = GlobalMessage.NotFound404 });
 
-        [Authorize(Policy = "UserOnly")]
-        [HttpGet]
-        [Route("GetAll")]
-        public async Task<ActionResult<IEnumerable<ShowCategoryDTO>>> GetAllAsync()
-        {
-            var categories = await _systemCache.TryGetCacheList(CacheCategory);
+        logger.LogInformation("Method Get All Categories Paginated was acioned successfully");
+        return Ok(new Response<IEnumerable<ShowCategoryDTO>> { StatusCode = StatusCodes.Status200OK, Message = GlobalMessage.OK200, Data = categoriesList });
+    }
 
-            if (categories is null || !categories.Any())
-                return NotFound(new Response<IActionResult> { StatusCode = StatusCodes.Status404NotFound, Message = GlobalMessage.NotFound404 });
+    [Authorize("UserOnly")]
+    [HttpGet]
+    [Route("GetCategoryWithProducts/{id:int}")]
+    public async Task<ActionResult<ShowCategoryDTO>> GetCategoryWithProductsAsync([FromRoute] int id)
+    {
+        var category = await categoryService.GetCategoryWithProductsAsync(id);
 
-            var categorysDto = _mapper.Map<IEnumerable<ShowCategoryDTO>>(categories);
+        if (category is null)
+            return NotFound(new Response<IActionResult> { StatusCode = StatusCodes.Status404NotFound, Message = GlobalMessage.NotFound404 });
 
-            _logger.LogInformation("CategoryController: Method GetAll was acioned successfully");
-            return Ok(new Response<IEnumerable<ShowCategoryDTO>> { StatusCode = StatusCodes.Status200OK, Message = GlobalMessage.OK200, Data = categorysDto });
-        }
+        logger.LogInformation("Method Get was acioned successfully");
+        return Ok(new Response<ShowCategoryDTO> { StatusCode = StatusCodes.Status200OK, Message = GlobalMessage.OK200, Data = category });
+    }
 
-        [Authorize(Policy = "UserOnly")]
-        [HttpGet]
-        [Route("Get/{id:int}")]
-        public async Task<ActionResult<ShowCategoryDTO>> GetAsync([FromRoute] int id)
-        {
-            var category = await _systemCache.TryGetCacheUnique($"{CacheCategory}/{id}", id);
+    [Authorize("UserOnly")]
+    [HttpGet]
+    [Route("Get/{id:int}")]
+    public async Task<ActionResult<ShowCategoryDTO>> GetAsync([FromRoute] int id)
+    {
+        var category = await categoryService.GetAsync(id);
 
-            if (category is null)
-                return NotFound(new Response<IActionResult> { StatusCode = StatusCodes.Status404NotFound, Message = GlobalMessage.NotFound404 });
+        if (category is null)
+            return NotFound(new Response<IActionResult> { StatusCode = StatusCodes.Status404NotFound, Message = GlobalMessage.NotFound404 });
 
-            var categoryDto = _mapper.Map<ShowCategoryDTO>(category);
+        logger.LogInformation("Method Get was acioned successfully");
+        return Ok(new Response<ShowCategoryDTO> { StatusCode = StatusCodes.Status200OK, Message = GlobalMessage.OK200, Data = category });
+    }
 
-            _logger.LogInformation("CategoryController: Method Get was acioned successfully");
-            return Ok(new Response<ShowCategoryDTO> { StatusCode = StatusCodes.Status200OK, Message = GlobalMessage.OK200, Data = categoryDto });
-        }
+    [Authorize("AdminOnly")]
+    [HttpPost]
+    [Route("Create")]
+    public async Task<IActionResult> CreateAsync([FromBody] CreateCategoryDTO categoryDto)
+    {
+        if (categoryDto is null)
+            return BadRequest(new Response<IActionResult> { StatusCode = StatusCodes.Status400BadRequest, Message = GlobalMessage.BadRequest400 });
 
-        [Authorize(Policy = "AdminOnly")]
-        [HttpPost]
-        [Route("Create")]
-        public async Task<IActionResult> CreateAsync([FromBody] CreateCategoryDTO createCategoryDto)
-        {
-            if (createCategoryDto is null)
-                return BadRequest(new Response<IActionResult> { StatusCode = StatusCodes.Status400BadRequest, Message = GlobalMessage.BadRequest400 });
+        await categoryService.CreateAsync(categoryDto);
 
-            var category = _mapper.Map<Category>(createCategoryDto);
+        logger.LogInformation($"A new category with name {categoryDto.Name} was created successfully");
+        return Ok(new Response<IActionResult> { StatusCode = StatusCodes.Status200OK, Message = GlobalMessage.OK200 });
+    }
 
-            await _unitOfWork.CategoryRepository.CreateAsync(category);
-            await _unitOfWork.CommitAsync();
+    [Authorize("AdminOnly")]
+    [HttpPut]
+    [Route("Update/{id:int}")]
+    public async Task<IActionResult> UpdateAsync([FromRoute] int id, [FromBody] UpdateCategoryDTO updateCategoryDto)
+    {
+        if (updateCategoryDto is null || updateCategoryDto.Id != id)
+            return BadRequest(new Response<IActionResult> { StatusCode = StatusCodes.Status400BadRequest, Message = GlobalMessage.BadRequest400 });
 
-            _systemCache.InvalidCache(CacheCategory);
+        await categoryService.UpdateAsync(updateCategoryDto);
 
-            _logger.LogInformation($"CategoryController: A Category with ID {category.Id} was created successfully");
-            return Ok(new Response<IActionResult> { StatusCode = StatusCodes.Status201Created, Message = GlobalMessage.Created201 });
-        }
+        logger.LogInformation($"A category with ID {id} was updated successfully");
+        return Ok(new Response<IActionResult> { StatusCode = StatusCodes.Status200OK, Message = GlobalMessage.OK200 });
+    }
 
-        [Authorize(Policy = "AdminOnly")]
-        [HttpPatch]
-        [Route("Update/{id:int}")]
-        public async Task<ActionResult<ShowCategoryDTO>> UpdateAsync([FromRoute] int id, [FromBody] JsonPatchDocument<Category> pathDoc)
-        {
-            if (pathDoc is null)
-                return BadRequest(new Response<IActionResult> { StatusCode = StatusCodes.Status400BadRequest, Message = GlobalMessage.BadRequest400 });
+    [Authorize("AdminOnly")]
+    [HttpDelete]
+    [Route("Delete/{id:int}")]
+    public async Task<IActionResult> DeleteAsync([FromRoute] int id)
+    {
+        var categoryExist = await categoryService.GetAsync(id);
 
-            var categoryExist = await _unitOfWork.CategoryRepository.GetAsync(id);
+        if (categoryExist is null)
+            return NotFound(new Response<IActionResult> { StatusCode = StatusCodes.Status404NotFound, Message = GlobalMessage.NotFound404 });
 
-            if (categoryExist is null)
-                return NotFound(new Response<IActionResult> { StatusCode = StatusCodes.Status404NotFound, Message = GlobalMessage.NotFound404 });
+        await categoryService.DeleteAsync(categoryExist);
 
-            pathDoc.ApplyTo(categoryExist, ModelState);
-
-            if (!ModelState.IsValid)
-                return BadRequest(new Response<IActionResult> { StatusCode = StatusCodes.Status400BadRequest, Message = GlobalMessage.BadRequest400 });
-
-            await _unitOfWork.CommitAsync();
-
-            _systemCache.InvalidCache(CacheCategory);
-            _systemCache.InvalidCache($"{CacheCategory}/{id}");
-
-            var categoryDto = _mapper.Map<ShowCategoryDTO>(categoryExist);
-
-            _logger.LogInformation($"CategoryController: A Category with ID {categoryDto.Id} was updated successfully");
-            return Ok(new Response<ShowCategoryDTO> { StatusCode = StatusCodes.Status200OK, Message = GlobalMessage.OK200, Data = categoryDto });
-        }
-
-        [Authorize(Policy = "AdminOnly")]
-        [HttpDelete]
-        [Route("Delete/{id:int}")]
-        public async Task<IActionResult> DeleteAsync([FromRoute] int id)
-        {
-            var categoryExist = await _unitOfWork.CategoryRepository.GetAsync(id);
-
-            if (categoryExist is null)
-                return NotFound(new Response<IActionResult> { StatusCode = StatusCodes.Status404NotFound, Message = GlobalMessage.NotFound404 });
-
-            _unitOfWork.CategoryRepository.DeleteAsync(categoryExist);
-            await _unitOfWork.CommitAsync();
-
-            _systemCache.InvalidCache(CacheCategory);
-            _systemCache.InvalidCache($"{CacheCategory}/{id}");
-
-            _logger.LogInformation($"CategoryController: A Category with ID {id} was deleted successfully");
-            return Ok(new Response<IActionResult> { StatusCode = StatusCodes.Status200OK, Message = GlobalMessage.OK200 });
-        }
+        logger.LogInformation($"A category with ID {id} was deleted successfully");
+        return Ok(new Response<IActionResult> { StatusCode = StatusCodes.Status200OK, Message = GlobalMessage.OK200 });
     }
 }

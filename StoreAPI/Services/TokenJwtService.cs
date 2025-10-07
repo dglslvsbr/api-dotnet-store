@@ -5,44 +5,43 @@ using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
 
-namespace StoreAPI.Services
+namespace StoreAPI.Services;
+
+public class TokenJwtService : ITokenService
 {
-    public class TokenJwtService : ITokenService
+    public string GenerateToken(Client client, IConfiguration configuration)
     {
-        public string GenerateToken(Client client, IConfiguration configuration)
-        {
-            string key = configuration["Jwt:Key"]
-                ?? throw new ArgumentException("The key not found");
-            
-            byte[] secretKey = Encoding.UTF8.GetBytes(key);
+        string key = configuration["Jwt:Key"]
+            ?? throw new ArgumentException("The key not found");
+        
+        byte[] secretKey = Encoding.UTF8.GetBytes(key);
 
-            SymmetricSecurityKey securityKey = new(secretKey);
+        SymmetricSecurityKey securityKey = new(secretKey);
 
-            SigningCredentials credentials = new(securityKey, SecurityAlgorithms.HmacSha256);
+        SigningCredentials credentials = new(securityKey, SecurityAlgorithms.HmacSha256);
 
-            List<Claim> claims =
-            [
-                new(JwtRegisteredClaimNames.Sub, client.Id.ToString()),
-                new(JwtRegisteredClaimNames.Name, client.FirstName),
-                new(JwtRegisteredClaimNames.Email, client.Email),
-                new(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
-            ];
+        List<Claim> claims =
+        [
+            new(JwtRegisteredClaimNames.Sub, client.Id.ToString()),
+            new(JwtRegisteredClaimNames.Name, client.FirstName!),
+            new(JwtRegisteredClaimNames.Email, client.Email!),
+            new(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
+        ];
 
-            foreach (var role in client.ClientRole!)
-                claims.Add(new Claim(ClaimTypes.Role, role.Role!.Name!));
+        foreach (var role in client.ClientRole!)
+            claims.Add(new Claim(ClaimTypes.Role, role.Role!.Name!));
 
-            JwtSecurityToken token = new
-            (
-                issuer: configuration["Jwt:Issuer"],
-                audience: configuration["Jwt:Audience"],
-                expires: DateTime.UtcNow.AddHours(1),
-                claims: claims,
-                signingCredentials: credentials
-            );
+        JwtSecurityToken token = new
+        (
+            issuer: configuration["Jwt:Issuer"],
+            audience: configuration["Jwt:Audience"],
+            expires: DateTime.UtcNow.AddHours(1),
+            claims: claims,
+            signingCredentials: credentials
+        );
 
-            JwtSecurityTokenHandler handler = new();
+        JwtSecurityTokenHandler handler = new();
 
-            return handler.WriteToken(token);
-        }
+        return handler.WriteToken(token);
     }
 }

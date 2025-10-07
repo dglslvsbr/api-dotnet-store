@@ -4,8 +4,10 @@ using System.ComponentModel.DataAnnotations;
 
 namespace StoreAPI.DTOs;
 
-public class CreateOrderDTO
+public class UpdateOrderDTO
 {
+    [Required]
+    public int Id { get; set; }
     [CustomValidation(typeof(CurrentDataValidation), nameof(CurrentDataValidation.Validate))]
     public DateTimeOffset CreatAt { get; set; }
 

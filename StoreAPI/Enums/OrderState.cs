@@ -1,10 +1,9 @@
-﻿namespace StoreAPI.Enums
+﻿namespace StoreAPI.Enums;
+
+public enum OrderState
 {
-    public enum OrderState
-    {
-        Processing,
-        Shipped,
-        Delivered,
-        Canceled
-    }
+    Processing,
+    Shipped,
+    Delivered,
+    Canceled
 }
