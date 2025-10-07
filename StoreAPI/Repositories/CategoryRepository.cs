@@ -1,12 +1,21 @@
-﻿using StoreAPI.AppContext;
+﻿using Microsoft.EntityFrameworkCore;
+using StoreAPI.Context;
 using StoreAPI.Entities.Models;
+using StoreAPI.Interfaces;
+using StoreAPI.Services;
 
-namespace StoreAPI.Repositories
+namespace StoreAPI.Repositories;
+
+public class CategoryRepository(AppDbContext context) : Repository<Category>(context), ICategoryRepository
 {
-    public class CategoryRepository : Repository<Category>
+    public async Task<IEnumerable<Category>> GetAllCategoriesPaginatedAsync(int pageSize, int pageNumber)
     {
-        public CategoryRepository(AppDbContext context) : base(context)
-        {
-        }
+        var source = _context.Category.Include(x => x.Product).OrderBy(x => x.Id).AsQueryable();
+        return await PaginatedService.EntityPaginated(source, pageNumber, pageSize);
+    }
+
+    public async Task<Category> GetCategoryWithProductsAsync(int id)
+    {
+        return (await _context.Category.Include(x => x.Product).FirstOrDefaultAsync(x => x.Id == id))!;
     }
 }

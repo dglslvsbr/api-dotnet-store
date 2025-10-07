@@ -1,18 +1,14 @@
 ﻿using Microsoft.EntityFrameworkCore;
-using StoreAPI.AppContext;
+using StoreAPI.Context;
 using StoreAPI.Entities.Authentication;
+using StoreAPI.Interfaces;
 
-namespace StoreAPI.Repositories
+namespace StoreAPI.Repositories;
+
+public class RoleRepository(AppDbContext context) : Repository<Role>(context), IRoleRepository
 {
-    public class RoleRepository : Repository<Role>
+    public async Task<Role> GetByNameAsync(string roleName)
     {
-        public RoleRepository(AppDbContext context) : base(context)
-        {
-        }
-
-        public async Task<Role> GetByNameAsync(string roleName)
-        {
-            return (await _context.Role.FirstOrDefaultAsync(x => x.Name == roleName))!;
-        }
+        return (await _context.Role.FirstOrDefaultAsync(x => x.Name == roleName))!;
     }
 }
