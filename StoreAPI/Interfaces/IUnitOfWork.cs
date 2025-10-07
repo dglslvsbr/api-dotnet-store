@@ -1,16 +1,13 @@
-﻿using StoreAPI.Repositories;
+﻿namespace StoreAPI.Interfaces;
 
-namespace StoreAPI.Interfaces
+public interface IUnitOfWork : IDisposable
 {
-    public interface IUnitOfWork
-    {
-        CategoryRepository CategoryRepository { get; }
-        ProductRepository ProductRepository { get; }
-        ClientRepository ClientRepository { get; }
-        RoleRepository RoleRepository { get; }
-        OrderRepository OrderRepository { get; }
-        OrderItemRepository OrderItemRepository { get; }
-        Task CommitAsync();
-        Task RollbackAsync();
-    }
+    IProductRepository ProductRepository { get; }
+    IClientRepository ClientRepository { get; }
+    IRoleRepository RoleRepository { get; }
+    IOrderRepository OrderRepository { get; }
+    ICategoryRepository CategoryRepository { get; }
+    Task BeginTransaction();
+    Task CommitAsync();
+    Task RollbackAsync();
 }

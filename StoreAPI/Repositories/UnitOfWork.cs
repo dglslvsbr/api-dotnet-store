@@ -1,61 +1,64 @@
-﻿using StoreAPI.AppContext;
+﻿using Microsoft.EntityFrameworkCore.Storage;
+using StoreAPI.Context;
 using StoreAPI.Interfaces;
 
-namespace StoreAPI.Repositories
+namespace StoreAPI.Repositories;
+
+public class UnitOfWork(AppDbContext context) : IUnitOfWork
 {
-    public class UnitOfWork : IUnitOfWork
+    public readonly AppDbContext _context = context;
+    private IDbContextTransaction? _transaction;
+    private IProductRepository? _productRepository;
+    private IClientRepository? _clientRepository;
+    private IRoleRepository? _roleRepository;
+    private IOrderRepository? _orderRepository;
+    private ICategoryRepository? _categoryRepository;
+    
+    public IProductRepository ProductRepository
     {
-        private readonly AppDbContext _context;
-        private CategoryRepository? _categoryRepository;
-        private ProductRepository? _productRepository;
-        private ClientRepository? _clientRepository;
-        private RoleRepository? _roleRepository;
-        private OrderRepository? _orderRepository;
-        private OrderItemRepository? _orderItemRepository;
+        get { return _productRepository ??= new ProductRepository(_context); }
+    }
 
-        public UnitOfWork(AppDbContext context)
-        {
-            _context = context;
-        }
+    public IClientRepository ClientRepository
+    {
+        get {  return _clientRepository ??= new ClientRepository(_context); }
+    }
 
-        public CategoryRepository CategoryRepository
-        {
-            get { return _categoryRepository ??= new CategoryRepository(_context); }
-        }
+    public IRoleRepository RoleRepository
+    {
+        get { return _roleRepository ??= new RoleRepository(_context); }
+    }
 
-        public ProductRepository ProductRepository
-        {
-            get { return _productRepository ??= new ProductRepository(_context); }
-        }
+    public IOrderRepository OrderRepository
+    {
+        get { return _orderRepository ??= new OrderRepository(_context); }
+    }
 
-        public ClientRepository ClientRepository
-        {
-            get {  return _clientRepository ??= new ClientRepository(_context); }
-        }
+    public ICategoryRepository CategoryRepository
+    {
+        get { return _categoryRepository ??= new CategoryRepository(_context); }
+    }
 
-        public RoleRepository RoleRepository
-        {
-            get { return _roleRepository ??= new RoleRepository(_context); }
-        }
+    public async Task BeginTransaction()
+    {
+        _transaction = await _context.Database.BeginTransactionAsync();
+    }
 
-        public OrderRepository OrderRepository
-        {
-            get { return _orderRepository ??= new OrderRepository(_context); }
-        }
-
-        public OrderItemRepository OrderItemRepository
-        {
-            get { return _orderItemRepository ??= new OrderItemRepository(_context); }
-        }
-
-        public async Task CommitAsync()
-        {
+    public async Task CommitAsync()
+    {
+        if (_transaction != null)
+            await _transaction!.CommitAsync();
+        else
             await _context.SaveChangesAsync();
-        }
+    }
 
-        public async Task RollbackAsync()
-        {
-            // Not Implemented
-        }
+    public async Task RollbackAsync()
+    {
+        await _transaction!.RollbackAsync();
+    }
+
+    public void Dispose()
+    {
+        _transaction?.Dispose();
     }
 }
