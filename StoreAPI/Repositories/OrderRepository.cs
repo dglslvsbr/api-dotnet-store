@@ -10,7 +10,8 @@ public class OrderRepository(AppDbContext context) : Repository<Order>(context),
 {
     public async Task<IEnumerable<Order>> GetAllOrdersPaginatedAsync(int pageNumber, int pageSize)
     {
-        var source = _context.Order.Include(x => x.OrderItem!).ThenInclude(x => x.Product).OrderBy(x => x.Id).AsQueryable();
+        var source = _context.Order.Include(x => x.OrderItem!).ThenInclude(x => x.Product)
+            .OrderBy(x => x.Id).AsQueryable().AsSplitQuery();
         return await PaginatedService.EntityPaginated(source, pageNumber, pageSize);
     }
 }
