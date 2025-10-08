@@ -8,6 +8,7 @@ using StoreAPI.Context;
 using StoreAPI.Customs;
 using StoreAPI.Filters;
 using StoreAPI.Interfaces;
+using StoreAPI.Middlewares;
 using StoreAPI.Repositories;
 using StoreAPI.Services;
 using System.Text;
@@ -73,7 +74,8 @@ public class Program
 
         // DbContext configured
         var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
-        builder.Services.AddDbContext<AppDbContext>(x => x.UseMySql(connectionString, ServerVersion.AutoDetect(connectionString)));
+        builder.Services.AddDbContext<AppDbContext>(x => x.UseMySql(connectionString,
+            ServerVersion.AutoDetect(connectionString)));
 
         // Time Life scoped
         builder.Services.AddScoped<IClientService, ClientService>();
@@ -105,6 +107,8 @@ public class Program
             app.UseSwagger();
             app.UseSwaggerUI();
         }
+
+        app.UseMiddleware<ResponseTimeMiddleware>();
 
         app.UseHttpsRedirection();
 
