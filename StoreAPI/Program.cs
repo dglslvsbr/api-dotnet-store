@@ -3,7 +3,6 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
-using Newtonsoft.Json;
 using StoreAPI.Context;
 using StoreAPI.Customs;
 using StoreAPI.Filters;
@@ -45,7 +44,7 @@ public class Program
         // Implemented Rate Limiting
         builder.Services.AddRateLimiter(options => options.AddFixedWindowLimiter("RateLimiter", options =>
         {
-            options.PermitLimit = 1;
+            options.PermitLimit = 5;
             options.Window = TimeSpan.FromSeconds(5);
             options.QueueLimit = 0;
             options.QueueProcessingOrder = QueueProcessingOrder.OldestFirst;
@@ -74,8 +73,7 @@ public class Program
 
         // DbContext configured
         var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
-        builder.Services.AddDbContext<AppDbContext>(x => x.UseMySql(connectionString,
-            ServerVersion.AutoDetect(connectionString)));
+        builder.Services.AddDbContext<AppDbContext>(x => x.UseSqlServer(connectionString));
 
         // Time Life scoped
         builder.Services.AddScoped<IClientService, ClientService>();
