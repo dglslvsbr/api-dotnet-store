@@ -42,15 +42,17 @@ namespace StoreAPI.Controllers
             return Ok(new Response<ShowOrderDTO> { StatusCode = StatusCodes.Status200OK, Message = GlobalMessage.OK200, Data = order });
         }
 
-        [Authorize(Policy = "UserOnly")]
         [HttpPost]
-        [Route("Create/{clientId:int}/{installments:int}")]
-        public async Task<IActionResult> CreateAsync([FromRoute] int clientId, [FromRoute] int installments, [FromBody] List<int> productsId)
+        [Route("Create")]
+        public async Task<IActionResult> CreateAsync([FromBody] CreateOrderDTO createOrderDto)
         {
-            if (productsId is null || productsId.Count == 0)
+            if (createOrderDto is null)
                 return BadRequest(new Response<IActionResult> { StatusCode = StatusCodes.Status400BadRequest, Message = GlobalMessage.BadRequest400 });
 
-            await orderRepository.CreateAsync(clientId, installments, productsId);
+            var result = await orderRepository.CreateAsync(createOrderDto);
+
+            if (!result.Success)
+                return BadRequest(result.ErrorMessage);
 
             logger.LogInformation($"OrderController: A new order was created successfully");
             return Ok(new Response<IActionResult> { StatusCode = StatusCodes.Status200OK, Message = GlobalMessage.OK200 });

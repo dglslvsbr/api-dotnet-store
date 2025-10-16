@@ -25,8 +25,11 @@ public class AuthController(IUnitOfWork unitOfWork, IConfiguration configuration
 
         var userExist = await unitOfWork.ClientRepository.GetByEmailAsync(loginDTO.Email!);
 
-        if (userExist is null || !BCrypt.Net.BCrypt.Verify(loginDTO.Password, userExist.Password))
+        if (userExist is null)
             return BadRequest(new Response<IActionResult> { StatusCode = StatusCodes.Status400BadRequest, Message = GlobalMessage.BadRequest400 });
+
+        if (!BCrypt.Net.BCrypt.Verify(loginDTO.Password, userExist.Password))
+            return Unauthorized(new Response<IActionResult> { StatusCode = StatusCodes.Status400BadRequest, Message = GlobalMessage.Message("The password does not match") });
 
         var token = tokenService.GenerateToken(userExist, configuration);
 
