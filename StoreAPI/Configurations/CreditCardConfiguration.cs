@@ -15,7 +15,7 @@ public class CreditCardConfiguration : IEntityTypeConfiguration<CreditCard>
         builder.Property(x => x.Number).IsRequired().HasMaxLength(16);
         builder.Property(x => x.Expiration).IsRequired();
         builder.Property(x => x.CVV).IsRequired().HasMaxLength(3);
-        builder.Property(x => x.UsedLimit).HasDefaultValue(0.0m);
+        builder.Property(x => x.UsedLimit).HasDefaultValue(0.0m).HasPrecision(10, 2);
         builder.Property(x => x.MaxLimit).IsRequired().HasPrecision(10, 2);
         builder.Property(x => x.ClientId).IsRequired();
 
