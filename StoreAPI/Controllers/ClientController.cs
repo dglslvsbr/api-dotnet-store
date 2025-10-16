@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Cors;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
 using StoreAPI.DTOs;
+using StoreAPI.Enums;
 using StoreAPI.Interfaces;
 using StoreAPI.Useful;
 
@@ -62,11 +63,17 @@ public class ClientController(IClientService clientService, ILogger<ClientContro
     {
         if (createClientDto is null)
             return BadRequest(new Response<IActionResult> { StatusCode = StatusCodes.Status400BadRequest, Message = GlobalMessage.BadRequest400 });
+        
+        var clientDuplicate = await clientService.CheckDuplicates(createClientDto);
 
-        var clientExist = await clientService.GetByEmailAsync(createClientDto.Email!);
+        if (clientDuplicate.Contains(DuplicateField.Email_Exist))
+            return Conflict(new Response<IActionResult> { StatusCode = StatusCodes.Status409Conflict, Message = "Email already exist" });
 
-        if (clientExist is not null)
-            return Conflict(new Response<IActionResult> { StatusCode = StatusCodes.Status409Conflict, Message = GlobalMessage.Conflit409 });
+        if (clientDuplicate.Contains(DuplicateField.CPF_Exist))
+            return Conflict(new Response<IActionResult> { StatusCode = StatusCodes.Status409Conflict, Message = "CPF already exist" });
+
+        if (clientDuplicate.Contains(DuplicateField.Phone_Exist))
+            return Conflict(new Response<IActionResult> { StatusCode = StatusCodes.Status409Conflict, Message = "Phone already exist" });
 
         await clientService.CreateAsync(createClientDto);
 

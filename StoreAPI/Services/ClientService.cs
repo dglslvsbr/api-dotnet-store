@@ -1,17 +1,20 @@
 ﻿using AutoMapper;
 using Microsoft.Extensions.Caching.Memory;
 using StoreAPI.DTOs;
+using StoreAPI.Entities.Authentication;
 using StoreAPI.Entities.Models;
+using StoreAPI.Enums;
 using StoreAPI.Extensions;
 using StoreAPI.Interfaces;
+using StoreAPI.Useful;
 
 namespace StoreAPI.Services;
 
 public class ClientService(IUnitOfWork unitOfWork, IMapper mapper, IMemoryCache memoryCache) : IClientService
 {
-    private static string ClientListKey => "CacheClient";
-    private static string ClientByIdKey(int id) => $"{ClientListKey}/{id}";
-    private static string ClientByEmailKey(string email) => $"{ClientListKey}/{email}";
+    public static string ClientListKey => "CacheClient";
+    public static string ClientByIdKey(int id) => $"{ClientListKey}/{id}";
+    public static string ClientByEmailKey(string email) => $"{ClientListKey}/{email}";
 
     public async Task<IEnumerable<ShowClientDTO>> GetAllAsync()
     {
@@ -31,8 +34,16 @@ public class ClientService(IUnitOfWork unitOfWork, IMapper mapper, IMemoryCache 
         return mapper.Map<ShowClientDTO>(client);
     }
 
+    public async Task<List<DuplicateField>> CheckDuplicates(CreateClientDTO client)
+    {
+        return await unitOfWork.ClientRepository.CheckDuplicates(client);
+    }
+
     public async Task CreateAsync(CreateClientDTO entity)
     {
+        entity.Password = BCrypt.Net.BCrypt.HashPassword(entity.Password);
+        entity.CreditCard = GenerateCreditCard.Generate();
+        entity.ClientRole = [new ClientRole { RoleId = 1 }];
         await unitOfWork.ClientRepository.CreateAsync(mapper.Map<Client>(entity));
         await unitOfWork.CommitAsync();
 
