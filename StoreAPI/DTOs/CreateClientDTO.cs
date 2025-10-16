@@ -1,5 +1,8 @@
-﻿using StoreAPI.Validations;
+﻿using StoreAPI.Entities.Authentication;
+using StoreAPI.Entities.Models;
+using StoreAPI.Validations;
 using System.ComponentModel.DataAnnotations;
+using System.Text.Json.Serialization;
 
 namespace StoreAPI.DTOs;
 
@@ -22,4 +25,10 @@ public class CreateClientDTO
 
     [CustomValidation(typeof(PhoneValidation), nameof(PhoneValidation.Validate))]
     public string? Phone { get; set; }
+    [Required(ErrorMessage = "Address is required")]
+    public Address Address { get; set; } = null!;
+    [JsonIgnore]
+    public CreditCard? CreditCard { get; set; }
+    [JsonIgnore]
+    public ICollection<ClientRole>? ClientRole { get; set; }
 }
