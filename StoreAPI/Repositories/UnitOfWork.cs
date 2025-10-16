@@ -39,6 +39,11 @@ public class UnitOfWork(AppDbContext context) : IUnitOfWork
         get { return _categoryRepository ??= new CategoryRepository(_context); }
     }
 
+    public async Task SaveChangesAsync()
+    {
+        await _context.SaveChangesAsync();
+    }
+
     public async Task BeginTransaction()
     {
         _transaction = await _context.Database.BeginTransactionAsync();
@@ -47,7 +52,7 @@ public class UnitOfWork(AppDbContext context) : IUnitOfWork
     public async Task CommitAsync()
     {
         if (_transaction != null)
-            await _transaction!.CommitAsync();
+            await _transaction.CommitAsync();
         else
             await _context.SaveChangesAsync();
     }

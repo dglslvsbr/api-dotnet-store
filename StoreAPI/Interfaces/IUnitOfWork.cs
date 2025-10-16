@@ -7,6 +7,7 @@ public interface IUnitOfWork : IDisposable
     IRoleRepository RoleRepository { get; }
     IOrderRepository OrderRepository { get; }
     ICategoryRepository CategoryRepository { get; }
+    Task SaveChangesAsync();
     Task BeginTransaction();
     Task CommitAsync();
     Task RollbackAsync();
