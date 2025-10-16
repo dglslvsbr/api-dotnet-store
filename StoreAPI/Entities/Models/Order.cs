@@ -12,5 +12,5 @@ public class Order
     public Client? Client { get; set; }
     public ICollection<OrderItem>? OrderItem { get; set; }
 
-    public decimal OrderTotal => OrderItem?.Sum(x => x.Quantity * x.UnitPrice) ?? 0;
+    public decimal OrderTotal => OrderItem?.Sum(x => x.Quantity * x.UnitPrice) ?? 0.0m;
 }

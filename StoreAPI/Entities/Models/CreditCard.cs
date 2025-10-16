@@ -1,4 +1,6 @@
-﻿namespace StoreAPI.Entities.Models;
+﻿using System.Text.Json.Serialization;
+
+namespace StoreAPI.Entities.Models;
 
 public class CreditCard
 {
@@ -9,6 +11,7 @@ public class CreditCard
     public decimal? UsedLimit { get; set; }
     public decimal MaxLimit { get; set; }
     public int ClientId { get; set; }
+    [JsonIgnore]
     public Client? Client { get; set; }
 
     public decimal RemainingLimit => (decimal)(MaxLimit - UsedLimit)!;
