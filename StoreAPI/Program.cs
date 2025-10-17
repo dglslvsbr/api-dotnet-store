@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
+using Microsoft.OpenApi.Models;
 using StoreAPI.Context;
 using StoreAPI.Customs;
 using StoreAPI.Filters;
@@ -10,6 +11,7 @@ using StoreAPI.Interfaces;
 using StoreAPI.Middlewares;
 using StoreAPI.Repositories;
 using StoreAPI.Services;
+using System.Reflection;
 using System.Text;
 using System.Text.Json.Serialization;
 using System.Threading.RateLimiting;
@@ -39,7 +41,19 @@ public class Program
 
         // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
         builder.Services.AddEndpointsApiExplorer();
-        builder.Services.AddSwaggerGen();
+        builder.Services.AddSwaggerGen(c =>
+        {
+            c.SwaggerDoc("v1", new OpenApiInfo
+            {
+                Title = "E-Commerce API",
+                Version = "v1",
+                Description = "REST API for user authentication, product management, and orders."
+            });
+
+            var xmlFile = $"{Assembly.GetExecutingAssembly().GetName().Name}.xml";
+            var xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFile);
+            c.IncludeXmlComments(xmlPath);
+        });
 
         // Implemented Rate Limiting
         builder.Services.AddRateLimiter(options => options.AddFixedWindowLimiter("RateLimiter", options =>
@@ -103,7 +117,10 @@ public class Program
         if (app.Environment.IsDevelopment())
         {
             app.UseSwagger();
-            app.UseSwaggerUI();
+            app.UseSwaggerUI(x =>
+            {
+                x.SwaggerEndpoint("/swagger/v1/swagger.json", "E-Commerce API v1");
+            });
         }
 
         app.UseMiddleware<ResponseTimeMiddleware>();
