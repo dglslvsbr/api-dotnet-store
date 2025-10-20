@@ -11,7 +11,8 @@ namespace StoreAPI.Services;
 
 public class OrderService(IUnitOfWork unitOfWork, IMapper mapper, IMemoryCache memoryCache) : IOrderService
 {
-    public IUnitOfWork UnitOfWork { get; private set; } = unitOfWork ?? throw new ArgumentException("Unit Of Work is null");
+    public virtual IUnitOfWork UnitOfWork { get; private set; } = unitOfWork 
+        ?? throw new ArgumentException("Unit Of Work is null");
 
     private static string OrderListKey => "CacheOrder";
     private static string OrderByIdKey(int id) => $"{OrderListKey}/{id}";
@@ -93,6 +94,7 @@ public class OrderService(IUnitOfWork unitOfWork, IMapper mapper, IMemoryCache m
             memoryCache.Remove(OrderListKey);
             memoryCache.Remove(ClientService.ClientListKey);
             memoryCache.Remove(ClientService.ClientByIdKey(createOrderDto.ClientId));
+            memoryCache.Remove(ClientService.ClientByEmailKey(client.Email!));
 
             return ServiceResult.Ok();
         }

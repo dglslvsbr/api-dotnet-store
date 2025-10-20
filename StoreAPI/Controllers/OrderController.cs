@@ -15,7 +15,7 @@ namespace StoreAPI.Controllers
     [EnableCors("AllowCors")]
     [ApiController]
     [Route("api/[controller]")]
-    public class OrderController(IOrderService orderRepository, ILogger<OrderController> logger) : ControllerBase
+    public class OrderController(IOrderService orderService, ILogger<OrderController> logger) : ControllerBase
     {
         /// <summary>
         /// Get orders by page and size
@@ -27,7 +27,7 @@ namespace StoreAPI.Controllers
         [Route("GetAllOrdersPaginated")]
         public async Task<ActionResult<IEnumerable<ShowOrderDTO>>> GetAllOrdersPaginatedAsync([FromQuery] int pageNumber, [FromQuery] int pageSize)
         {
-            var orderList = await orderRepository.GetAllOrdersPaginatedAsync(pageNumber, pageSize);
+            var orderList = await orderService.GetAllOrdersPaginatedAsync(pageNumber, pageSize);
 
             if (orderList is null || !orderList.Any())
                 return NotFound(new Response<IActionResult>
@@ -55,7 +55,7 @@ namespace StoreAPI.Controllers
         [Route("Get/{id:int}")]
         public async Task<IActionResult> GetAsync([FromRoute] int id)
         {
-            var order = await orderRepository.GetAsync(id);
+            var order = await orderService.GetAsync(id);
 
             if (order is null)
                 return NotFound(new Response<IActionResult>
@@ -82,14 +82,7 @@ namespace StoreAPI.Controllers
         [Route("Create")]
         public async Task<IActionResult> CreateAsync([FromBody] CreateOrderDTO createOrderDto)
         {
-            if (createOrderDto is null)
-                return BadRequest(new Response<IActionResult>
-                {
-                    StatusCode = StatusCodes.Status400BadRequest,
-                    Message = GlobalMessage.BadRequest400
-                });
-
-            var result = await orderRepository.CreateAsync(createOrderDto);
+            var result = await orderService.CreateAsync(createOrderDto);
 
             if (!result.Success)
                 return BadRequest(result.ErrorMessage);
@@ -119,7 +112,7 @@ namespace StoreAPI.Controllers
                     Message = GlobalMessage.BadRequest400
                 });
 
-            await orderRepository.UpdateAsync(updateOrderDto);
+            await orderService.UpdateAsync(updateOrderDto);
 
             logger.LogInformation($"OrderController: An order with ID {id} was updated successfully");
             return Ok(new Response<UpdateOrderDTO>
@@ -140,7 +133,7 @@ namespace StoreAPI.Controllers
         [Route("Delete/{id:int}")]
         public async Task<IActionResult> DeleteAsync([FromRoute] int id)
         {
-            var orderExist = await orderRepository.GetAsync(id);
+            var orderExist = await orderService.GetAsync(id);
 
             if (orderExist is null)
                 return NotFound(new Response<IActionResult>
@@ -149,7 +142,7 @@ namespace StoreAPI.Controllers
                     Message = GlobalMessage.NotFound404
                 });
 
-            await orderRepository.DeleteAsync(orderExist);
+            await orderService.DeleteAsync(orderExist);
 
             logger.LogInformation($"OrderController: An order with ID {id} was deleted successfully");
             return Ok(new Response<ShowOrderDTO>

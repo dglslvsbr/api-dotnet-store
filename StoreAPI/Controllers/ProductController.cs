@@ -105,7 +105,7 @@ public class ProductController(IProductService productService, ILogger<ProductCo
     /// </summary>
     /// <response code="201">Product created successfully</response>
     /// <response code="400">Invalid or null product data</response>
-    [Authorize(Policy = "AdminOnly")]
+   
     [HttpPost]
     [Route("Create")]
     public async Task<IActionResult> CreateAsync([FromBody] CreateProductDTO createProductDto)

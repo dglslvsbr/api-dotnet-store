@@ -26,7 +26,11 @@ public class Program
 
         // Variables
         var configuration = builder.Configuration;
-        var myAllowSpecifOrigin = "http://127.0.0.1:5500";
+        var myAllowSpecifOrigin = new List<string>
+        {
+            "http://127.0.0.1:5500",
+            "http://localhost:5500"
+        };
 
         // To suppress the automatic model state validation
         builder.Services.Configure<ApiBehaviorOptions>(options => options.SuppressModelStateInvalidFilter = true);
@@ -65,7 +69,9 @@ public class Program
         }));
 
         // Implemented CORS
-        builder.Services.AddCors(options => options.AddPolicy("AllowCors", options => options.WithOrigins(myAllowSpecifOrigin).AllowAnyHeader().AllowAnyMethod().AllowCredentials()));
+        builder.Services.AddCors(options => options.AddPolicy("AllowCors", options =>
+        options.WithOrigins(myAllowSpecifOrigin[0], myAllowSpecifOrigin[1])
+        .AllowAnyHeader().AllowAnyMethod().AllowCredentials()));
 
         // Implemented authentication
         builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
@@ -129,7 +135,7 @@ public class Program
 
         app.UseRouting();
 
-        app.UseCors(myAllowSpecifOrigin);
+        app.UseCors();
 
         app.UseRateLimiter();
 
