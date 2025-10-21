@@ -132,7 +132,7 @@ public class CategoryController(ICategoryService categoryService, ILogger<Catego
     /// Update a category by ID
     /// </summary>
     /// <response code="200">Category successfully updated</response>
-    /// <response code="400">Invalid category ID or invalid category>
+    /// <response code="400">Invalid category ID or invalid category</response>
     [Authorize("AdminOnly")]
     [HttpPut]
     [Route("Update/{id:int}")]
