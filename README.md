@@ -11,7 +11,7 @@ outras ações que requerem privilégios mais altos, como por exemplo, modificar
 <h2>Descrição mais detalhada das funcionalidades</h2>
 <pre>
   ▪️ Cadastro de Cliente
-  ▪️ Logar na Conta (Autenticação JWT Bearer)
+  ▪️ Logar na Conta (Autenticação Jwt Bearer)
   ▪️ Cadastro de Categoria ou Produto
   ▪️ Buscar Cliente, Categoria ou Produto
   ▪️ Criar um Pedido
@@ -31,6 +31,16 @@ outras ações que requerem privilégios mais altos, como por exemplo, modificar
   ▪️ Swagger
   ▪️ SwaggerGen
   ▪️ SwaggerUI
+</pre>
+
+<h2>Implementações de segurança e desempenho</h2>
+<pre>
+  ▪️ Autenticação Jwt
+  ▪️ Sistema de cache (IMemoryCache)
+  ▪️ CORS (Cross-Origin Resource Sharing)
+  ▪️ Rate Limiter
+  ▪️ Políticas de autorização
+  ▪️ Tratamento Global de erro
 </pre>
 
 <h2>Endpoints</h2>
