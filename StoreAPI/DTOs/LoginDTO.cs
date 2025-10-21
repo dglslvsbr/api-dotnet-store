@@ -5,9 +5,9 @@ namespace StoreAPI.DTOs;
 
 public class LoginDTO
 {
-    [EmailAddress]
+    [EmailAddress(ErrorMessage = "Email is required")]
     public string? Email { get; set; }
 
-    [CustomValidation(typeof(PasswordValidation), nameof(PasswordValidation.Validate))]
+    [CustomValidation(typeof(StringValidation), nameof(StringValidation.TextNoWhiteSpace))]
     public string? Password { get; set; }
 }

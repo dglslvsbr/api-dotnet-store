@@ -5,6 +5,6 @@ namespace StoreAPI.DTOs;
 
 public class CreateRoleDTO
 {
-    [CustomValidation(typeof(StringValidation), nameof(StringValidation.Validate))]
+    [CustomValidation(typeof(StringValidation), nameof(StringValidation.TextNoNumber))]
     public string? Name { get; set; }
 }
