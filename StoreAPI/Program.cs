@@ -49,9 +49,9 @@ public class Program
         {
             c.SwaggerDoc("v1", new OpenApiInfo
             {
-                Title = "E-Commerce API",
+                Title = "Store API",
                 Version = "v1",
-                Description = "REST API for user authentication, product management, and orders."
+                Description = "RESTful API for user authentication, product management, and orders."
             });
 
             var xmlFile = $"{Assembly.GetExecutingAssembly().GetName().Name}.xml";
