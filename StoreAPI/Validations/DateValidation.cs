@@ -2,9 +2,9 @@
 
 namespace StoreAPI.Validations;
 
-public class CurrentDataValidation
+public class DateValidation
 {
-    public static ValidationResult Validate(object? obj)
+    public static ValidationResult DateTimeOffSet(object? obj)
     {
         if (obj is DateTimeOffset date)
         {
