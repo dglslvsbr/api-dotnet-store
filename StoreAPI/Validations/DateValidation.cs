@@ -8,8 +8,6 @@ public class DateValidation
     {
         if (obj is DateTimeOffset date)
         {
-            if (date > DateTimeOffset.UtcNow)
-                return new ValidationResult("The date cannot be in the future.");
             if (date < DateTimeOffset.UtcNow)
                 return new ValidationResult("The date cannot be in the past.");
 
