@@ -105,7 +105,7 @@ public class ProductController(IProductService productService, ILogger<ProductCo
     /// </summary>
     /// <response code="201">Product created successfully</response>
     /// <response code="400">Invalid or null product data</response>
-   
+    [Authorize(Policy = "AdminOnly")]
     [HttpPost]
     [Route("Create")]
     public async Task<IActionResult> CreateAsync([FromBody] CreateProductDTO createProductDto)
@@ -116,7 +116,7 @@ public class ProductController(IProductService productService, ILogger<ProductCo
                 StatusCode = StatusCodes.Status400BadRequest,
                 Message = GlobalMessage.BadRequest400
             });
-
+        
         await productService.CreateAsync(createProductDto);
 
         logger.LogInformation($"ProductController: A new Product with name {createProductDto.Name} was created successfully");
