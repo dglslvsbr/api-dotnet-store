@@ -135,7 +135,7 @@ public class Program
 
         app.UseRouting();
 
-        app.UseCors();
+        app.UseCors("AllowCors");
 
         app.UseRateLimiter();
 
@@ -145,6 +145,17 @@ public class Program
 
         app.MapControllers();
 
+        using var scope = app.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+
+        try
+        {
+            db.Database.Migrate();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error applying migrations: {ex.Message}");
+        }
         app.Run();
     }
 }
