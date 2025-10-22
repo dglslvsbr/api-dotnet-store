@@ -18,13 +18,15 @@ public class CategoryConfiguration : IEntityTypeConfiguration<Category>
         builder.HasIndex(x => x.Name).IsUnique();
 
         // Relations
-        builder.HasMany(x => x.Product).WithOne(x => x.Category);
+        builder.HasMany(x => x.Product).WithOne(x => x.Category)
+        .HasForeignKey(x => x.CategoryId).IsRequired();
 
         // Data Seeding
         builder.HasData(
                     new Category { Id = 1, Name = "Hardware" },
                     new Category { Id = 2, Name = "PlayStation" },
-                    new Category { Id = 3, Name = "Smartphone" });
+                    new Category { Id = 3, Name = "Smartphone" },
+                    new Category { Id = 4, Name = "Games" });
 
     }
 }

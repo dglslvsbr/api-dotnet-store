@@ -16,5 +16,10 @@ public class RoleConfiguration : IEntityTypeConfiguration<Role>
 
         // Relations
         builder.HasMany(x => x.ClientRole).WithOne(x => x.Role);
+
+        builder.HasData(
+                new Role { Id = 1, Name = "User" },
+                new Role { Id = 2, Name = "Admin" }
+        );
     }
 }
