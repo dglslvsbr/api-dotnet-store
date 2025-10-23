@@ -5,7 +5,7 @@ VisualStudioVersion = 17.14.36414.22
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "StoreAPI", "StoreAPI\StoreAPI.csproj", "{BBE39029-24F9-4ACA-B7CE-875219955B42}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "StoreAPI_Tests_Unit", "StoreAPI_xUnit\StoreAPI_Tests_Unit.csproj", "{54A1E191-C192-44B3-9619-B96C82945035}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "StoreAPI_Tests_Unit", "StoreAPI_Tests_Unit\StoreAPI_Tests_Unit.csproj", "{54A1E191-C192-44B3-9619-B96C82945035}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "StoreAPI_Tests_Integration", "StoreAPI_Tests_Integration\StoreAPI_Tests_Integration.csproj", "{AA81353A-640A-447C-B46B-67EF5CAD507F}"
 EndProject
