@@ -1,4 +1,5 @@
-﻿using Microsoft.EntityFrameworkCore.Storage;
+﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Storage;
 using StoreAPI.Context;
 using StoreAPI.Interfaces;
 
@@ -13,7 +14,7 @@ public class UnitOfWork(AppDbContext context) : IUnitOfWork
     private IRoleRepository? _roleRepository;
     private IOrderRepository? _orderRepository;
     private ICategoryRepository? _categoryRepository;
-    
+
     public IProductRepository ProductRepository
     {
         get { return _productRepository ??= new ProductRepository(_context); }
@@ -21,7 +22,7 @@ public class UnitOfWork(AppDbContext context) : IUnitOfWork
 
     public IClientRepository ClientRepository
     {
-        get {  return _clientRepository ??= new ClientRepository(_context); }
+        get { return _clientRepository ??= new ClientRepository(_context); }
     }
 
     public IRoleRepository RoleRepository
@@ -46,20 +47,25 @@ public class UnitOfWork(AppDbContext context) : IUnitOfWork
 
     public async Task BeginTransaction()
     {
+        if (_context.Database.IsInMemory())
+            return;
+
         _transaction = await _context.Database.BeginTransactionAsync();
     }
 
     public async Task CommitAsync()
     {
-        if (_transaction != null)
+        if (_transaction is not null)
             await _transaction.CommitAsync();
-        else
-            await _context.SaveChangesAsync();
     }
 
     public async Task RollbackAsync()
     {
-        await _transaction!.RollbackAsync();
+        if (_context.Database.IsInMemory())
+            return;
+
+        if (_transaction is not null)
+            await _transaction.RollbackAsync();
     }
 
     public void Dispose()
