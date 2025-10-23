@@ -6,7 +6,7 @@ using StoreAPI.Entities.Models;
 using StoreAPI.Interfaces;
 using StoreAPI.Services;
 
-namespace StoreAPI_xUnit.Services;
+namespace StoreAPI_Tests_Unit.Services;
 
 public class OrderServiceTest
 {
